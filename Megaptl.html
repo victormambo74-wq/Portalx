@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PortalX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#1e293b;
+  --accent:#38f2af;
+  --text:#e5e7eb;
+}
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+nav{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  background:#020617;
+}
+nav button{
+  flex:1;
+  padding:10px;
+  background:var(--card);
+  border:none;
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+}
+nav button:hover{background:var(--accent);color:#000}
+
+section{display:none;padding:16px}
+section.active{display:block}
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:16px;
+}
+
+input,button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:8px;
+  border:none;
+}
+input{background:#020617;color:white}
+button.action{
+  background:var(--accent);
+  color:#000;
+  font-weight:bold;
+}
+
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+  gap:10px;
+}
+.gallery img{
+  width:100%;
+  border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <button onclick="show('login')">Login</button>
+  <button onclick="show('signup')">Sign Up</button>
+  <button onclick="show('dashboard')">Dashboard</button>
+  <button onclick="show('gallery')">Gallery</button>
+  <button onclick="logout()">Logout</button>
+</nav>
+
+<!-- LOGIN -->
+<section id="login" class="active">
+  <div class="card">
+    <h2>Login</h2>
+    <input id="li_user" placeholder="Username">
+    <input id="li_pass" type="password" placeholder="Password">
+    <button class="action" onclick="login()">Login</button>
+  </div>
+</section>
+
+<!-- SIGNUP -->
+<section id="signup">
+  <div class="card">
+    <h2>Sign Up</h2>
+    <input id="su_user" placeholder="Username">
+    <input id="su_pass" type="password" placeholder="Password">
+    <button class="action" onclick="signup()">Create Account</button>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dashboard">
+  <div class="card">
+    <h2 id="welcome">Welcome</h2>
+    <p>Total Photos: <b id="count">0</b></p>
+    <input type="file" accept="image/*" onchange="upload(event)">
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="card">
+    <h2>Your Gallery</h2>
+    <div class="gallery" id="images"></div>
+  </div>
+</section>
+
+<script>
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+function show(id){
+  document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if(id==="dashboard") loadDashboard();
+  if(id==="gallery") loadGallery();
+}
+
+function signup(){
+  const u = su_user.value.trim();
+  const p = su_pass.value.trim();
+  if(!u || !p){alert("Fill all fields");return;}
+  if(users.find(x=>x.u===u)){alert("User exists");return;}
+  users.push({u,p,photos:[]});
+  localStorage.setItem("users",JSON.stringify(users));
+  alert("Account created");
+  su_user.value=""; su_pass.value="";
+  show("login");
+}
+
+function login(){
+  const u = li_user.value.trim();
+  const p = li_pass.value.trim();
+  const user = users.find(x=>x.u===u && x.p===p);
+  if(!user){alert("Wrong details");return;}
+  currentUser=user;
+  localStorage.setItem("currentUser",JSON.stringify(user));
+  show("dashboard");
+}
+
+function loadDashboard(){
+  if(!currentUser){show("login");return;}
+  welcome.textContent="Welcome, "+currentUser.u;
+  count.textContent=currentUser.photos.length;
+}
+
+function upload(e){
+  const file=e.target.files[0];
+  const reader=new FileReader();
+  reader.onload=()=>{
+    currentUser.photos.push(reader.result);
+    users=users.map(u=>u.u===currentUser.u?currentUser:u);
+    localStorage.setItem("users",JSON.stringify(users));
+    localStorage.setItem("currentUser",JSON.stringify(currentUser));
+    loadDashboard();
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadGallery(){
+  if(!currentUser){show("login");return;}
+  images.innerHTML="";
+  currentUser.photos.forEach(p=>{
+    const img=document.createElement("img");
+    img.src=p;
+    images.appendChild(img);
+  });
+}
+
+function logout(){
+  localStorage.removeItem("currentUser");
+  currentUser=null;
+  show("login");
+}
+</script>
+
+</body>
+</html>
